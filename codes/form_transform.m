@@ -13,7 +13,8 @@ if length(origin) == 4
     % 形成矩阵然后求A
     origin_matrix = [origin(1),origin(3),1; origin(1),origin(4),1; origin(2),origin(3),1; origin(2),origin(4),1]';
     map_matrix = [map(1),map(3),1; map(1),map(4),1; map(2),map(3),1; map(2),map(4),1]';
-    transform = map_matrix * pinv(origin_matrix);
+    % origin = transform * transmap
+    transform = origin_matrix * pinv(map_matrix);
 end
 if length(origin) == 6
     %同样的，这里是6个点（梯形）的情况
