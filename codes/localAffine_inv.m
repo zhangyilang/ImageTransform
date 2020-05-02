@@ -36,14 +36,14 @@ transMap = repmat(transMap,[1,1,2]);    % 将transMap维度与coord统一，方便操作
 
 %% 计算局部区域内的仿射变换
 numTrans = numel(transform);            % 仿射变换的种类数
-inRegionCoords = cell(1,numTrans);      % 各局部区域的坐标集合
+inRegionCoord = cell(1,numTrans);      % 各局部区域的坐标集合
 for t = 1:numTrans
-    inRegionCoords{t} = reshape(coord(transMap == t),[],2)'; % 需要第t种变换的目标图像素的坐标
-    numCoord = size(inRegionCoords{t},2);                    % 坐标的数量
-    transCoord = transform{t} * [inRegionCoords{t};ones(1,numCoord)];    % 仿射变换
+    inRegionCoord{t} = reshape(coord(transMap == t),[],2)'; % 需要第t种变换的目标图像素的坐标
+    numCoord = size(inRegionCoord{t},2);                    % 坐标的数量
+    transCoord = transform{t} * [inRegionCoord{t};ones(1,numCoord)];    % 仿射变换
     transCoord = transCoord(1:2,:);                         % 去掉最后一行的1
     for i = 1:numCoord
-        dst = num2cell(inRegionCoords{t}(:,i) + [H/2;W/2]);  % 需要填充的坐标
+        dst = num2cell(inRegionCoord{t}(:,i) + [H/2;W/2]);  % 需要填充的坐标
         outputImg(dst{:},:) = linearInterp(inputImg,transCoord(:,i)+[H/2;W/2]); % 填充
     end
 end
@@ -55,9 +55,10 @@ numCoord = size(offRegionCoord,2);                      % 区域外点的个数
 % 计算区域外的点到每个区域的最小距离
 dist_power = zeros(numTrans,numCoord);              % 申请空间
 for t = 1:numTrans
-    inRegionCoord = reshape(inRegionCoords{t},[],1,2);
-    dist_tmp = repmat(offRegionCoord,[size(inRegionCoord,1),1,1]) - ...
-        repmat(inRegionCoord,[1,numCoord,1]);               % 计算距离
+    inRegionEdge = region2edge(inRegionCoord{t}');
+    inRegionEdge = reshape(inRegionEdge,[],1,2);
+    dist_tmp = repmat(offRegionCoord,[size(inRegionEdge,1),1,1]) - ...
+        repmat(inRegionEdge,[1,numCoord,1]);               % 计算距离
     dist_tmp = sum(dist_tmp.^2,3) .^ (1 / 2 * p.Results.dist_e);    % 距离的指数
     dist_power(t,:) = 1 ./ (min(dist_tmp,[],1) - 1 + eps);  % 区域外的点到该区域的最短距离-1（的倒数）
 end
