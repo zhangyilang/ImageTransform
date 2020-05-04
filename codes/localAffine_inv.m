@@ -34,45 +34,47 @@ coord(:,:,1) = repmat((1:H)'-H/2,[1,W]);
 coord(:,:,2) = repmat((1:W)-W/2,[H,1]);
 transMap = repmat(transMap,[1,1,2]);    % 将transMap维度与coord统一，方便操作
 
-% 计算变换区域中心坐标
-numTrans = numel(transform);
-regionCenter = zeros(numTrans,1,2);   
-for t = 1:numTrans
-    regionCenter(t,1,:) = mean(reshape(coord(transMap == t),[],2),1);
-end
-
 %% 计算局部区域内的仿射变换
+numTrans = numel(transform);            % 仿射变换的种类数
+inRegionCoord = cell(1,numTrans);      % 各局部区域的坐标集合
 for t = 1:numTrans
-    originCoord = reshape(coord(transMap == t),[],2)';  % 需要第t种变换的目标图像素的坐标
-    numCoord = size(originCoord,2);
-    transCoord = transform{t} * [originCoord;ones(1,numCoord)];     % 仿射变换
-    transCoord = transCoord(1:2,:);                     % 去掉最后一行的1
+    inRegionCoord{t} = reshape(coord(transMap == t),[],2)'; % 需要第t种变换的目标图像素的坐标
+    numCoord = size(inRegionCoord{t},2);                    % 坐标的数量
+    transCoord = transform{t} * [inRegionCoord{t};ones(1,numCoord)];    % 仿射变换
+    transCoord = transCoord(1:2,:);                         % 去掉最后一行的1
     for i = 1:numCoord
-        dst = num2cell(originCoord(:,i) + [H/2;W/2]);   % 需要填充的坐标
+        dst = num2cell(inRegionCoord{t}(:,i) + [H/2;W/2]);  % 需要填充的坐标
         outputImg(dst{:},:) = linearInterp(inputImg,transCoord(:,i)+[H/2;W/2]); % 填充
     end
 end
 
 %% 计算局部区域外的加权仿射变换
-originCoord = reshape(coord(transMap == 0),1,[],2);
-numCoord = size(originCoord,2);
-% 计算所有区域外的点与各区域中心点之间的距离
-dist_power = repmat(originCoord,[numTrans,1,1]) - repmat(regionCenter,[1,numCoord,1]);
-dist_power = sum(dist_power.^2,3) .^ (1 / 2 * p.Results.dist_e);    % 计算距离
-dist_power = 1 ./ dist_power;                                       % 取倒数
+offRegionCoord = reshape(coord(transMap == 0),1,[],2);  % 局部区域外的坐标集合，增加一维方便矩阵计算
+numCoord = size(offRegionCoord,2);                      % 区域外点的个数
+
+% 计算区域外的点到每个区域的最小距离
+dist_power = zeros(numTrans,numCoord);              % 申请空间
+for t = 1:numTrans
+    inRegionEdge = region2edge(inRegionCoord{t}');
+    inRegionEdge = reshape(inRegionEdge,[],1,2);
+    dist_tmp = repmat(offRegionCoord,[size(inRegionEdge,1),1,1]) - ...
+        repmat(inRegionEdge,[1,numCoord,1]);               % 计算距离
+    dist_tmp = sum(dist_tmp.^2,3) .^ (1 / 2 * p.Results.dist_e);    % 距离的指数
+    dist_power(t,:) = 1 ./ (min(dist_tmp,[],1) - 1 + eps);  % 区域外的点到该区域的最短距离-1（的倒数）
+end
 
 % 根据距离计算加权仿射变换
-originCoord = reshape(originCoord,[],2)';
-transCoord = zeros(2,numCoord);         % 初始化
+offRegionCoord = reshape(offRegionCoord,[],2)';     % 去掉之前增加的维度
+transCoord = zeros(2,numCoord);                     % 初始化
 for t = 1:numTrans
-    tmpCoord = transform{t} * [originCoord;ones(1,numCoord)];           % 仿射变换
+    tmpCoord = transform{t} * [offRegionCoord;ones(1,numCoord)];        % 仿射变换
     weight = dist_power(t,:) ./ sum(dist_power,1);                      % 计算权重
     transCoord = transCoord + tmpCoord(1:2,:) .* repmat(weight,[2,1]);  % 去掉最后一行的1，按权重求和
 end
 
 % 根据反向变换后的坐标进行填充
 for i = 1:numCoord
-    dst = num2cell(originCoord(:,i) + [H/2;W/2]);                       % 需要填充的坐标
+    dst = num2cell(offRegionCoord(:,i) + [H/2;W/2]);                        % 需要填充的坐标
     outputImg(dst{:},:) = linearInterp(inputImg,transCoord(:,i)+[H/2;W/2]); % 填充
 end
 
