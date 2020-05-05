@@ -1,5 +1,7 @@
 function [transMap] = form_transMap(shape, goal_control)
-    %这里生成transmap， 左眼，右眼，鼻子，嘴分别为1，2，3，4
+    % 这里生成transmap, 
+	% goal_control :目标图控制点, 类型为cell
+	% shape: 目标图大小
     transMap = zeros(shape(1:2));
     
     for i = 1:size(goal_control,2)
