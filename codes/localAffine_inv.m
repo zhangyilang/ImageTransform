@@ -36,7 +36,7 @@ transMap = repmat(transMap,[1,1,2]);    % 将transMap维度与coord统一，方便操作
 
 %% 计算局部区域内的仿射变换
 numTrans = numel(transform);            % 仿射变换的种类数
-inRegionCoord = cell(1,numTrans);      % 各局部区域的坐标集合
+inRegionCoord = cell(1,numTrans);       % 各局部区域的坐标集合
 for t = 1:numTrans
     inRegionCoord{t} = reshape(coord(transMap == t),[],2)'; % 需要第t种变换的目标图像素的坐标
     numCoord = size(inRegionCoord{t},2);                    % 坐标的数量
@@ -55,7 +55,7 @@ numCoord = size(offRegionCoord,2);                      % 区域外点的个数
 % 计算区域外的点到每个区域的最小距离
 dist_power = zeros(numTrans,numCoord);              % 申请空间
 for t = 1:numTrans
-    inRegionEdge = region2edge(inRegionCoord{t}');
+    inRegionEdge = region2edge(inRegionCoord{t}');  % 局部区域的边缘点
     inRegionEdge = reshape(inRegionEdge,[],1,2);
     dist_tmp = repmat(offRegionCoord,[size(inRegionEdge,1),1,1]) - ...
         repmat(inRegionEdge,[1,numCoord,1]);               % 计算距离

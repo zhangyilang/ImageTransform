@@ -17,12 +17,12 @@ end
 data_interp = zeros(1,1,C);
 
 %% 线性插值
-coord(1) = min(max(1,coord(1)),H);
-coord(2) = min(max(1,coord(2)),W);
-coord_fl = floor(coord);    % 坐标向下取整，确定下界
-dist = coord - coord_fl;    % 计算距离
-w1 = [1-dist(1),dist(1)];   % 第一维权重
-w2 = [1-dist(2),dist(2)];   % 第二维权重
+coord(1) = min(max(1,coord(1)),H);  % 处理第一维越界
+coord(2) = min(max(1,coord(2)),W);  % 处理第二维越界
+coord_fl = floor(coord);            % 坐标向下取整，确定下界
+dist = coord - coord_fl;            % 计算距离
+w1 = [1-dist(1),dist(1)];           % 第一维权重
+w2 = [1-dist(2),dist(2)];           % 第二维权重
 
 % 判断坐标点是否为整数，简化计算
 if abs(coord_fl - coord) < eps              % 两个维度均为整数，无需插值
