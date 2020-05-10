@@ -268,4 +268,123 @@ end
 
 
 ### 应用：人脸变换
+基于上文所述的局部仿射变换的反向图变换，我们可以将两张人像图的眼、鼻、口等进行仿射变换和填充，从而进行人脸变换。
+本例中，我们选取了一张徐志雷的图片和一张迪丽热巴的图片，试图让男性拥有女性的美丽容颜。
+我们将眼睛近似为一个菱形，鼻子近似为一个三角形，嘴近似为一个正方形，并选取了相应的控制点计算仿射矩阵，如图所示
+（这里是图）
+
+#### 关于仿射矩阵
+对于每一个区域内对应的控制点 Origin = (x<sub>origin,i</sub>  y<sub>origin,i</sub> , i = 1..n); Map = (x<sub>map,i</sub> , y<sub>map,i</sub> , i = 1..n),  我们将其中心化并补全为形如(x<sub>origin,i</sub> , y<sub>origin,i</sub> , 1, i = 1..n) 的矩阵后, 对仿射矩阵的求取相当于求一个3 $\times$ 3 的矩阵A, 使得 <br>
+    A = $\mathop {argmin}_{A}$ || Map - A * Origin ||<sub>2</sub> <br>
+因为 Map矩阵 和 Origin 矩阵实验中往往是不满秩的，在实际操作中， 我们选取 A = Origin * Map<sup>+</sup>, 其中 Map<sup>+</sup> 为 Map 矩阵的伪逆。
+
+#### 代码实现
+如下：
+`form_transform.m`
+```matlab
+%form_transform   构建仿射矩阵
+% 输入：
+%   shape_A     待变换图像大小
+%   shape_goal  匹配图像大小
+%   origin      仿射坐标    
+%   map         匹配坐标
+%   style       仿射区域形状，1--矩形，2--三角，3--菱形
+% 输出：
+%   transform   从匹配图像到待变换图像的仿射矩阵
+function [transform] = form_transform(shape_A, shape_goal, origin, map, style)
+if style == 1
+    % 形成二维坐标（,3）——(x,y,1)，然后求逆，这里是矩形框，故有四个参数
+     for i = 1:2
+         %归一化
+         origin(i) = origin(i) - shape_A(1)/2;
+         map(i) = map(i) - shape_goal(1)/2;
+     end
+     for i = 3:4
+         origin(i) = origin(i) - shape_A(2)/2;
+         map(i) = map(i) - shape_goal(2)/2;
+     end
+    % 形成矩阵然后求A
+    origin_matrix = [origin(1),origin(3),1; origin(1),origin(4),1; origin(2),origin(3),1; origin(2),origin(4),1]';
+    map_matrix = [map(1),map(3),1; map(1),map(4),1; map(2),map(3),1; map(2),map(4),1]';
+    % origin = transform * transmap
+end
+if style == 2
+    for i = 1:2
+        %归一化
+        origin(i) = origin(i) - shape_A(1)/2;
+        map(i) = map(i) - shape_goal(1)/2;
+    end
+    for i = 3:5
+        origin(i) = origin(i) - shape_A(2)/2;
+        map(i) = map(i) - shape_goal(2)/2;    
+    end
+    %同样的，这里是5个点（三角形）的情况
+    origin_matrix = [origin(1),origin(4),1; origin(2),origin(3),1; origin(2),origin(4),1; origin(2),origin(5),1]';
+    map_matrix = [map(1), map(4), 1; map(2), map(3), 1;map(2), map(4), 1;map(2), map(5), 1;]'; 
+end
+
+if style == 3
+    for i = 1:3
+        %归一化
+        origin(i) = origin(i) - shape_A(1)/2;
+        map(i) = map(i) - shape_goal(1)/2;
+    end
+    for i = 4:6
+        origin(i) = origin(i) - shape_A(2)/2;
+        map(i) = map(i) - shape_goal(2)/2;    
+    end 
+    origin_matrix = [origin(1),origin(5),1; origin(2),origin(4),1; origin(2),origin(5),1; origin(2),origin(6),1; origin(3),origin(5),1]';
+    map_matrix = [map(1), map(5), 1; map(2), map(4), 1;map(2), map(5), 1;map(2), map(6), 1;map(3), map(5), 1;]'; 
+end
+    transform = origin_matrix * pinv(map_matrix);
+end
+```
+
+同样的,我们也可以根据控制点和形状来构建仿射区域<br>
+`form_transMap.m`
+```matlab
+function [transMap] = form_transMap(shape, goal_control, style)
+  
+    % Transmap      仿射区域生成 
+  % 输入
+	% shape           待变换图像大小
+	% goal_control    控制点（cell）
+    % style           区域形状
+  % 输出
+    % transMap        一个二维矩阵，其中0--无需仿射，其余指示不同的仿射区域
+    transMap = zeros(shape(1:2));
+    
+    for i = 1:size(goal_control,2)
+        if style{i} == 1
+            % 矩形
+            transMap(goal_control{i}(1):goal_control{i}(2), goal_control{i}(3):goal_control{i}(4)) = i;
+        end
+        if style{i} == 4
+            % 梯形
+            Trapezoid = goal_control{i};
+            for j = Trapezoid(1):Trapezoid(2)
+            transMap(j, fix(Trapezoid(3) - (Trapezoid(3)-Trapezoid(5)) / (Trapezoid(2)-Trapezoid(1)) * (j-Trapezoid(1))) : fix((Trapezoid(6)-Trapezoid(4)) / (Trapezoid(2)-Trapezoid(1)) * (j-Trapezoid(1)) + Trapezoid(4))) = i;
+            end
+		end
+		
+		if style{i} == 2
+		    % 三角形
+			Tri = goal_control{i};
+			for j = Tri(1):Tri(2)
+			    transMap(j, fix(Tri(4) - (Tri(4)-Tri(3)) / (Tri(2)-Tri(1)) * (j-Tri(1))) : fix((Tri(5)-Tri(4)) / (Tri(2)-Tri(1)) * (j-Tri(1)) + Tri(4))) = i;
+			end
+		end
+		
+		if style{i} == 3
+		    diamond = goal_control{i};
+			for j = diamond(1):diamond(2)
+			    transMap(j, fix(diamond(5) - (diamond(5)-diamond(4)) / (diamond(2)-diamond(1)) * (j-diamond(1))) : fix((diamond(6)-diamond(5)) / (diamond(2)-diamond(1)) * (j-diamond(1)) + diamond(5))) = i;
+			end
+			for j = diamond(2):diamond(3)
+			    transMap(j, fix(diamond(4) + (diamond(5)-diamond(4)) / (diamond(3)-diamond(2)) * (j-diamond(2))) : fix(diamond(6) - (diamond(6)-diamond(5)) / (diamond(3)-diamond(2)) * (j-diamond(2)) )) = i;
+			end			
+			
+    end
+end
+```
 
