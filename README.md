@@ -9,9 +9,31 @@
 
 ### 反向图变换
 
-(zgsb! 我反了)
+反向图变换，顾名思义即为两张图对应区域之间的变换，本质是将像素点的坐标通过某一种函数关系，映射到另外的位置。通过定义变换区域和仿射矩阵，便可以实现从原始区域到目标区域的仿射。
 
+#### 关于变换区域
+为简化计算，本例中我们均使用几何形状对需要变换的区域进行拟合
 
+#### 关于求取仿射矩阵
+对于每一个区域内对应的控制点 Origin = 
+
+(x<sub>origin,i</sub>  y<sub>origin,i</sub> , i = 1..n); Map = (x<sub>map,i</sub> , y<sub>map,i</sub> , i = 1..n),  我们将其中心化并补全为形如
+
+$$
+ \begin{matrix}
+   x_{type,1} & x_{type,2} & x_{type,3} ......  x_{type,n} \\
+   y_{type,1} & y_{type,2} & y_{type,3} ...... y_{type,n}\\
+   1 & 1 & 1  \\
+
+  \end{matrix} 
+$$
+type = {Origin, Map}
+
+ 的矩阵后, 对仿射矩阵的求取相当于求一个3 $\times$ 3 的矩阵A, 使得 <br>
+    A = $\mathop {argmin}_{A}$ || Map - A * Origin ||<sub>2</sub> <br>
+因为 Map矩阵 和 Origin 矩阵实验中往往是不满秩的，在实际操作中， 我们选取 A = Origin * Map<sup>+</sup>, 其中 Map<sup>+</sup> 为 Map 矩阵的伪逆。
+
+在得到变换区域和仿射变换矩阵后，便可以通过局部仿射变换完成反向图变换。
 
 ### 局部仿射变换
 
@@ -273,13 +295,9 @@ end
 我们将眼睛近似为一个菱形，鼻子近似为一个三角形，嘴近似为一个正方形，并选取了相应的控制点计算仿射矩阵，如图所示
 （这里是图）
 
-#### 关于仿射矩阵
-对于每一个区域内对应的控制点 Origin = (x<sub>origin,i</sub>  y<sub>origin,i</sub> , i = 1..n); Map = (x<sub>map,i</sub> , y<sub>map,i</sub> , i = 1..n),  我们将其中心化并补全为形如(x<sub>origin,i</sub> , y<sub>origin,i</sub> , 1, i = 1..n) 的矩阵后, 对仿射矩阵的求取相当于求一个3 $\times$ 3 的矩阵A, 使得 <br>
-    A = $\mathop {argmin}_{A}$ || Map - A * Origin ||<sub>2</sub> <br>
-因为 Map矩阵 和 Origin 矩阵实验中往往是不满秩的，在实际操作中， 我们选取 A = Origin * Map<sup>+</sup>, 其中 Map<sup>+</sup> 为 Map 矩阵的伪逆。
 
 #### 代码实现
-如下：
+构建仿射矩阵的代码如下：
 `form_transform.m`
 ```matlab
 %form_transform   构建仿射矩阵
@@ -387,4 +405,12 @@ function [transMap] = form_transMap(shape, goal_control, style)
     end
 end
 ```
+
+#### 结果分析
+从反向图变换的结果中，我们可以看出代码基本实现了脸部对应器官的变换过程，但仍然存在一些不和谐之处，可能是因为：
+     1. 两张图的清晰度和分辨率不同，造成仿射变换后仿射区域和其他区域不协调
+     2. 对仿射区域的定义太过粗糙，眼睛，嘴等可以更精细地进行拟合
+     3. 一些脸部的深浅纹理和拍摄时的光影变化无法通过仿射变换来简单替换。
+     
+（结果图）
 
