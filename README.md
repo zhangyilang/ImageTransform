@@ -298,8 +298,8 @@ end
 本例中，我们选取了一张徐志雷的图片和一张迪丽热巴的图片，试图让男性拥有女性的美丽容颜。
 我们将眼睛近似为一个菱形，鼻子近似为一个三角形，嘴近似为一个正方形，并选取了相应的控制点计算仿射矩阵，如图所示
 （这里是图）
-<img src='results/B_tran.jpg' style='zoom:80%'>
-<img src='results/D_tran.jpg' style='zoom:80%'>
+<img src='results/B_tran.jpg' style='zoom:50%'>
+<img src='results/D_tran.jpg' style='zoom:50%'>
 #### 代码实现
 构建仿射矩阵的代码如下：
 函数`form_transform.m`：
