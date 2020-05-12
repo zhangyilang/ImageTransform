@@ -1,10 +1,10 @@
 function [transMap] = form_transMap(shape, left_eye, right_eye, nose, mouth)
-    %ÕâÀïÉú³Étransmap£¬ ×óÑÛ£¬ÓÒÑÛ£¬±Ç×Ó£¬×ì·Ö±ðÎª1£¬2£¬3£¬4
+    %ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½transmapï¿½ï¿½ ï¿½ï¿½ï¿½Û£ï¿½ï¿½ï¿½ï¿½Û£ï¿½ï¿½ï¿½ï¿½Ó£ï¿½ï¿½ï¿½Ö±ï¿½Îª1ï¿½ï¿½2ï¿½ï¿½3ï¿½ï¿½4
     transMap = zeros(shape(1:2));
     transMap(left_eye(1):left_eye(2), left_eye(3):left_eye(4)) = 1;
     transMap(right_eye(1):right_eye(2), right_eye(3):right_eye(4)) = 2;
     for j = nose(1):nose(2)
-        % ÕâÀï±Ç×ÓÊÇÒ»¸öÌÝÐÎ
+        % ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ò»ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
         transMap(j, fix(nose(3) - (nose(3)-nose(5)) / (nose(2)-nose(1)) * (j-nose(1))) : fix((nose(6)-nose(4)) / (nose(2)-nose(1)) * (j-nose(1)) + nose(4))) = 3;
     end
     transMap(mouth(1):mouth(2), mouth(3):mouth(4)) = 4;

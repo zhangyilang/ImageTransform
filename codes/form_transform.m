@@ -1,8 +1,8 @@
 function [transform] = form_transform(shape_A, shape_swl, origin, map)
 if length(origin) == 4
-    % ÐÎ³É¶þÎ¬×ø±ê£¨,3£©¡ª¡ª(x,y,1)£¬È»ºóÇóÄæ£¬ÕâÀïÊÇÕý·½ÐÎ¿ò£¬¹ÊÓÐËÄ¸ö²ÎÊý
+    % ï¿½Î³É¶ï¿½Î¬ï¿½ï¿½ï¿½ê£¨,3ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½(x,y,1)ï¿½ï¿½È»ï¿½ï¿½ï¿½ï¿½ï¿½æ£¬ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Î¿ò£¬¹ï¿½ï¿½ï¿½ï¿½Ä¸ï¿½ï¿½ï¿½ï¿½ï¿½
     for i = 1:2
-        %¹éÒ»»¯
+        %ï¿½ï¿½Ò»ï¿½ï¿½
         origin(i) = origin(i) - shape_A(1)/2;
         map(i) = map(i) - shape_swl(1)/2;
     end
@@ -10,14 +10,14 @@ if length(origin) == 4
         origin(i) = origin(i) - shape_A(2)/2;
         map(i) = map(i) - shape_swl(2)/2;    
     end
-    % ÐÎ³É¾ØÕóÈ»ºóÇóA
+    % ï¿½Î³É¾ï¿½ï¿½ï¿½È»ï¿½ï¿½ï¿½ï¿½A
     origin_matrix = [origin(1),origin(3),1; origin(1),origin(4),1; origin(2),origin(3),1; origin(2),origin(4),1]';
     map_matrix = [map(1),map(3),1; map(1),map(4),1; map(2),map(3),1; map(2),map(4),1]';
     % origin = transform * transmap
     transform = origin_matrix * pinv(map_matrix);
 end
 if length(origin) == 6
-    %Í¬ÑùµÄ£¬ÕâÀïÊÇ6¸öµã£¨ÌÝÐÎ£©µÄÇé¿ö
+    %Í¬ ï¿½ï¿½ï¿½Ä£ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½6ï¿½ï¿½ï¿½ã£¨ï¿½ï¿½ï¿½Î£ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
     for i = 1:2
         origin(i) = origin(i) - shape_A(1)/2;
         map(i) = map(i) - shape_swl(1)/2;
