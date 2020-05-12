@@ -299,7 +299,7 @@ end
 我们将眼睛近似为一个菱形，鼻子近似为一个三角形，嘴近似为一个正方形，并选取了相应的控制点计算仿射矩阵，如图所示
 （这里是图）
 <img src='results/B_tran.jpg' style='zoom:80%'>
-
+<img src='results/D_tran.jpg' style='zoom:80%'>
 #### 代码实现
 构建仿射矩阵的代码如下：
 函数`form_transform.m`：
@@ -422,5 +422,5 @@ end
 - 对仿射区域的定义太过粗糙，眼睛，嘴等可以更精细地进行拟合；
 - 一些脸部的深浅纹理和拍摄时的光影变化无法通过仿射变换来简单替换。
 - 对于原图像中的一些生理特征（如大小眼），在图像变换之后无法得到解决
-<img src='results/B_tran.jpg' style='zoom:80%'>     
+<img src='results/result.png' style='zoom:80%'>     
 
