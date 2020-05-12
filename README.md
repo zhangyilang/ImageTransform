@@ -26,7 +26,7 @@ $$
 $$
 其中$\text{type} = \{\text{Origin}, \text{Map}\}$
 
- 的矩阵后, 对仿射矩阵的求取相当于求一个$3\times 3$ 的矩阵$A$, 使得$A = \arg\min_{A} \Vert Map - A * Origin \Vert_2$ 
+ 的矩阵后, 对仿射矩阵的求取相当于求一个$3\times 3$ 的矩阵$A$, 使得$A = \arg\min_{A} \Vert \text{Map} - A * \text{Origin} \Vert_2$ 
 
 因为$\text{Map}$矩阵 和$\text{Origin}$矩阵实验中往往是不满秩的，在实际操作中，我们选取$A = \text{Origin} * \text{Map}^\dagger$, 其中$\text{Map}^\dagger$为$\text{Map}$矩阵的伪逆。
 
@@ -295,7 +295,9 @@ end
 （这里是图）
 
 
-#### 代码实现
+
+##### 代码实现
+
 构建仿射矩阵的代码如下：
 函数`form_transform.m`：
 ```matlab
