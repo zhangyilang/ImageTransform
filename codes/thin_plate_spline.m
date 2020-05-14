@@ -1,10 +1,9 @@
 function [outputImg] = thin_plate_spline(origin_control, new_control, inputImg)
     % input: original & new control point coord, shape: N*2
     % output: parameters of transformation
-    % 读取图像
-    
     % 获取图像大小、通道数
     [H,W,C] = size(inputImg);
+    disp(H);disp(W);
     M = H * W;  % M=图像像素个数
     control_size = size(origin_control);
     N = control_size(1,1); % N=控制点个数
@@ -16,14 +15,14 @@ function [outputImg] = thin_plate_spline(origin_control, new_control, inputImg)
     
     % 计算outputImg对应的inputImg坐标
     % 生成输入矩阵
-    X = zeros(M*2);
+    X = zeros(M,2);
     for i=1:M
         X(i,:) = [floor((i-1)/W),mod(i-1,W)];
     end
-    S = zeros(M*N);
+    S = zeros(M,N);
     for i=1:M
         for j = 1:N
-            S(i,j) = sigma(origin_control(j,:),X(i,:)); 
+            S(i,j) = sigma(origin_control(j,:),X(i,:));
         end
     end
     O = ones(M,1);
@@ -31,12 +30,12 @@ function [outputImg] = thin_plate_spline(origin_control, new_control, inputImg)
     % 计算output对应坐标Y
     Y = I*params;  % Y是M*2维矩阵
     
-    % 进行线性插值，将所得真实坐标填入对应的ouputImg位置
-    for i=1:M
-        Y(i,:)=
+    % 进行线性插值，将像素填入对应的ouputImg位置
+    for i=1:H
+        for j=1:W
+            outputImg(i,j,:) = linearInterp(inputImg, Y((i-1)*W+j,:));
+        end
     end
-    % 将inputImg像素填入outputImg
-     
     
     % print
     print_imgs(inputImg, outputImg)
@@ -58,15 +57,19 @@ function [T] = get_T(origin_control)
     % compute the params
     sizes = size(origin_control);
     N = sizes(1,1);
-    X = original_control;
+    X = origin_control;
     ones_N = ones(N, 1);
     % construct matix S
     S = zeros(N, N);
     for i = 1:N
         for j = 1:N
-            x_i = origin_control(i,:);
-            x_j = origin_control(j,:);
-            S(i,j) = sigma(x_i,x_j);
+            if i == j
+                S(i,j) = 0; 
+            else
+                x_i = origin_control(i,:);
+                x_j = origin_control(j,:);
+                S(i,j) = sigma(x_i,x_j);
+            end
         end
     end
     % construct T
