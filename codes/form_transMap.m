@@ -1,16 +1,16 @@
 function [transMap] = form_transMap(shape, goal_control, style)
-    % ÕâÀïÉú³Étransmap, 
-	% goal_control :Ä¿±êÍ¼¿ØÖÆµã, ÀàĞÍÎªcell
-	% shape: Ä¿±êÍ¼´óĞ¡
+    % è¿™é‡Œç”Ÿæˆtransmap, 
+	% goal_control :ç›®æ ‡å›¾æ§åˆ¶ç‚¹, ç±»å‹ä¸ºcell
+	% shape: ç›®æ ‡å›¾å¤§å°
     transMap = zeros(shape(1:2));
     
     for i = 1:size(goal_control,2)
         if style{i} == 1
-            % ¾ØĞÎ
+            % çŸ©å½¢
             transMap(goal_control{i}(1):goal_control{i}(2), goal_control{i}(3):goal_control{i}(4)) = i;
         end
         if style{i} == 4
-            % ÌİĞÎ
+            % æ¢¯å½¢
             Trapezoid = goal_control{i};
             for j = Trapezoid(1):Trapezoid(2)
             transMap(j, fix(Trapezoid(3) - (Trapezoid(3)-Trapezoid(5)) / (Trapezoid(2)-Trapezoid(1)) * (j-Trapezoid(1))) : fix((Trapezoid(6)-Trapezoid(4)) / (Trapezoid(2)-Trapezoid(1)) * (j-Trapezoid(1)) + Trapezoid(4))) = i;
@@ -18,7 +18,7 @@ function [transMap] = form_transMap(shape, goal_control, style)
 		end
 		
 		if style{i} == 2
-		    % Èı½ÇĞÎ
+		    % ä¸‰è§’å½¢
 			Tri = goal_control{i};
 			for j = Tri(1):Tri(2)
 			    transMap(j, fix(Tri(4) - (Tri(4)-Tri(3)) / (Tri(2)-Tri(1)) * (j-Tri(1))) : fix((Tri(5)-Tri(4)) / (Tri(2)-Tri(1)) * (j-Tri(1)) + Tri(4))) = i;

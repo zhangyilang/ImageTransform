@@ -1,8 +1,8 @@
 function [transform] = form_transform(shape_A, shape_goal, origin, map, style)
 if style == 1
-    % ĞÎ³É¶şÎ¬×ø±ê£¨,3£©¡ª¡ª(x,y,1)£¬È»ºóÇóÄæ£¬ÕâÀïÊÇÕı·½ĞÎ¿ò£¬¹ÊÓĞËÄ¸ö²ÎÊı
+    % å½¢æˆäºŒç»´åæ ‡ï¼ˆ,3ï¼‰â€”â€”(x,y,1)ï¼Œç„¶åæ±‚é€†ï¼Œè¿™é‡Œæ˜¯æ­£æ–¹å½¢æ¡†ï¼Œæ•…æœ‰å››ä¸ªå‚æ•°
     for i = 1:2
-        %¹éÒ»»¯
+        %é”Ÿæ–¤æ‹·ä¸€é”Ÿæ–¤æ‹·
         origin(i) = origin(i) - shape_A(1)/2;
         map(i) = map(i) - shape_goal(1)/2;
     end
@@ -10,14 +10,15 @@ if style == 1
         origin(i) = origin(i) - shape_A(2)/2;
         map(i) = map(i) - shape_goal(2)/2;    
     end
-    % ĞÎ³É¾ØÕóÈ»ºóÇóA
+    % é”Ÿè½¿æˆæ’…æ‹·é”Ÿæ–¤æ‹·ç„¶é”Ÿæ–¤æ‹·é”Ÿæ–¤æ‹·A
     origin_matrix = [origin(1),origin(3),1; origin(1),origin(4),1; origin(2),origin(3),1; origin(2),origin(4),1]';
     map_matrix = [map(1),map(3),1; map(1),map(4),1; map(2),map(3),1; map(2),map(4),1]';
     % origin = transform * transmap
 end
+
 if style == 2
     for i = 1:2
-        %¹éÒ»»¯
+        %å½’ä¸€åŒ–
         origin(i) = origin(i) - shape_A(1)/2;
         map(i) = map(i) - shape_goal(1)/2;
     end
@@ -25,14 +26,14 @@ if style == 2
         origin(i) = origin(i) - shape_A(2)/2;
         map(i) = map(i) - shape_goal(2)/2;    
     end
-    %Í¬ÑùµÄ£¬ÕâÀïÊÇ5¸öµã£¨Èı½ÇĞÎ£©µÄÇé¿ö
+    %åŒæ ·çš„ï¼Œè¿™é‡Œæ˜¯5ä¸ªç‚¹ï¼ˆä¸‰è§’å½¢ï¼‰çš„æƒ…å†µ
     origin_matrix = [origin(1),origin(4),1; origin(2),origin(3),1; origin(2),origin(4),1; origin(2),origin(5),1]';
     map_matrix = [map(1), map(4), 1; map(2), map(3), 1;map(2), map(4), 1;map(2), map(5), 1;]'; 
 end
 
 if style == 3
     for i = 1:3
-        %¹éÒ»»¯
+        %å½’ä¸€åŒ–
         origin(i) = origin(i) - shape_A(1)/2;
         map(i) = map(i) - shape_goal(1)/2;
     end
