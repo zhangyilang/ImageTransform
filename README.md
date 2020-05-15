@@ -3,7 +3,7 @@
 
 [TOC]
 
-这里随便写点什么吧
+本项目实现了两种图变换方法：局部仿射变换和薄板样条插值变换。同时运用反向图变换实现了这两种变换方法，并将其运用到了人脸图像处理上。通过对控制点位置的调整，实现了将一个人的外貌变得像另一个人的效果。
 
 ## 反向图变换
 
@@ -325,6 +325,170 @@ testTransform{2} = [1/sqrt(2),-1/sqrt(2), 0 ;
 localAffine_inv(testImg,testTransform,testTransMap,'dist_e',2,'visualize',true);
 ```
 
+## 薄板样条方法
+### 基本原理
+<img src='results/tps_theory.jpeg' style='zoom:80%'>
+
+薄板样条可以根据控制点的位移对平面进行变形，使得薄板（平面）的弯曲能量最小。具体计算方法如下：
+$$
+T_{c}=
+\left[\begin{matrix}
+   1_{N} & X_{c} & S_{c}  \\
+   0 & 0 & 1_{N}^{T} \\
+   0 & 0 & x^{T} \\
+\end{matrix}\right]
+$$
+$$W_{c} = 
+\left[\begin{matrix}
+   Y_{c}   \\
+   0 \\
+   0  \\
+\end{matrix}\right]
+$$
+$$T_{c} \cdot p=W_{c} (*)$$
+其中，$X_{c}=\left[\begin{matrix}
+   x_{1,1} & x_{1,2} \\
+    x_{2,1} & x_{2,2}\\
+    \vdots & \vdots \\
+   x_{N,1} & x_{N,2} \\
+\end{matrix}\right]$ 为控制点原始位置，$Y_{c}=\left[\begin{matrix}
+   y_{1,1} & y_{1,2} \\
+    y_{2,1} & y_{2,2}\\
+    \vdots & \vdots \\
+   y_{N,1} & y_{N,2} \\
+\end{matrix}\right]$ 为控制点变换后位置。$S=\left[\begin{matrix}
+   \sigma(||x_1-x_1||) & \sigma(||x_1-x_2||) & \cdots & \sigma(||x_1-x_N||)\\
+    \sigma(||x_2-x_1||) & \sigma(||x_2-x_2||) & \cdots & \sigma(||x_2-x_N||)\\
+    \vdots & \vdots & & \vdots\\
+   \sigma(||x_N-x_1||) & \sigma(||x_N-x_2||) & \cdots & \sigma(||x_N-x_N||) \\
+\end{matrix}\right]$, $\sigma(x)=x^2\cdot log(x)$是径向基函数矩阵。
+
+通过求解$(*)$可以解得$p$, 然后可以用p算出图上任意点变换后的位置：
+$$Y=\left[\begin{matrix}
+   1_{M} & X & S  \\
+\end{matrix}\right] \cdot
+p
+$$
+其中，$X=\left[\begin{matrix}
+   x_{1,1} & x_{1,2} \\
+    x_{2,1} & x_{2,2}\\
+    \vdots & \vdots \\
+   x_{M,1} & x_{M,2} \\
+\end{matrix}\right]$ 为所有点的原始坐标，而$S=\left[\begin{matrix}
+   \sigma(||x_1-x_1||) & \sigma(||x_1-x_2||) & \cdots & \sigma(||x_1-x_N||)\\
+    \sigma(||x_2-x_1||) & \sigma(||x_2-x_2||) & \cdots & \sigma(||x_2-x_N||)\\
+    \vdots & \vdots & & \vdots\\
+   \sigma(||x_M-x_1||) & \sigma(||x_M-x_2||) & \cdots & \sigma(||x_M-x_N||) \\
+\end{matrix}\right]$是径向基函数矩阵。
+
+最后，像素值填充使用了上文提及的线性插值算法。
+### 代码实现
+在实现过程中，需要注意几点
+1. 需设置$\sigma(0)=0$，否则会出现函数值为NaN的情况。
+2. 由于使用了反向图变换，所以输入控制点的时候，模板上的控制点位置应为控制点原始位置。
+代码如下：
+```matlab
+function [outputImg] = thin_plate_spline(origin_control, new_control, inputImg)
+    % input: original & new control point coord, shape: N*2
+    % output: parameters of transformation
+    % 获取图像大小、通道数
+    [H,W,C] = size(inputImg);
+    disp(H);disp(W);
+    M = H * W;  % M=图像像素个数
+    control_size = size(origin_control);
+    N = control_size(1,1); % N=控制点个数
+    % 申请空间
+    outputImg = zeros(H,W,C);
+    
+    % 计算参数
+    params = get_para(origin_control, new_control);
+    
+    % 计算outputImg对应的inputImg坐标
+    % 生成输入矩阵
+    X = zeros(M,2);
+    for i=1:M
+        X(i,:) = [floor((i-1)/W),mod(i-1,W)];
+    end
+    S = zeros(M,N);
+    for i=1:M
+        for j = 1:N
+            S(i,j) = sigma(origin_control(j,:),X(i,:));
+        end
+    end
+    O = ones(M,1);
+    I = [O,X,S];
+    % 计算output对应坐标Y
+    Y = I*params;  % Y是M*2维矩阵
+    
+    % 进行线性插值，将像素填入对应的ouputImg位置
+    for i=1:H
+        for j=1:W
+            outputImg(i,j,:) = linearInterp(inputImg, Y((i-1)*W+j,:));
+        end
+    end
+    
+    % print
+    print_imgs(inputImg, outputImg)
+end 
+
+function [params] = get_para(origin_control, new_control)
+    % input: original & new control point coord
+    % output: parameters of transformation, in the form of (3+N) * 2
+    T = get_T(origin_control);
+    % create the RHS vector
+    zeros_b = zeros(3,2);
+    b = [new_control; zeros_b];
+    % compute params [c,a,w]
+    params = T \ b;
+end
+
+function [T] = get_T(origin_control)
+    % this function creates the matrix T which will be used to 
+    % compute the params
+    sizes = size(origin_control);
+    N = sizes(1,1);
+    X = origin_control;
+    ones_N = ones(N, 1);
+    % construct matix S
+    S = zeros(N, N);
+    for i = 1:N
+        for j = 1:N
+            x_i = origin_control(i,:);
+            x_j = origin_control(j,:);
+            S(i,j) = sigma(x_i,x_j);
+        end
+    end
+    % construct T
+    T = zeros(N+3, N+3);
+    T(1:N,1) = ones_N;
+    T(1:N,2:3) = X;
+    T(1:N,4:N+3) = S;
+    T(N+1,4:N+3) = ones_N.';
+    T(N+2:N+3,4:N+3) = X.';
+end
+
+function [s_ij] = sigma(x1, x2)
+    % input: 2 coords of points
+    % ouput: sigma(|x1-x2|)
+    r = norm(x1 - x2);
+    if r == 0
+        s_ij = 0;
+    else
+        s_ij = r*r*log(r);
+    end
+end
+
+function print_imgs(inputImg, outputImg)
+    % original image
+    subplot(1,2,1)
+    imshow(inputImg)
+    title('Original Image')
+
+    % transformed image
+    subplot(1,2,2)
+    imshow(outputImg)
+    title('Transformed Image')
+```
 
 
 ## 应用：人脸变换
@@ -463,7 +627,7 @@ end
 
 ### 结果分析
 
-反向图变换的结果如下：
+反向图变换结果如下：
 
 <img src='results/result.png' style='zoom:60%'>
 
@@ -474,7 +638,21 @@ end
 - 两张图中人脸的朝向不同，第一张图片中人脸略朝左偏，而第二张图片中人脸明显地向右转，导致第二张图中右眼比左眼小；由于变化后的图像中人脸的整体朝向和第一张图一致（略偏左），这使得眼睛的大小差异看起来更加明显；
 - 对仿射区域的定义太过粗糙，眼睛，嘴等可以更精细地进行拟合；然而，如果使用更多的坐标点来描述局部区域，则无法通过简单的仿射变换来实现坐标变换；且坐标点的个数越多，最小二乘解得到的仿射变换越有可能不精确；
 
-  
+### 薄板样条插值运用：
+#### 控制点选取
+薄板样条方法选择了和仿射变换一样的图片作为测试图片，但是在控制点的选取上略有不同。这里，我们除了在五官边缘选取了控制点，还在脸的轮廓上选取了5个控制点。这样，可以让B神的脸在变换后更加切合迪丽热巴的形象。
+
+#### 结果分析
+效果图如下，其中上图为变换模板，左下为原图，右下为变换后图片：
+<div align=center>
+	<img src='test_images/dlrb_tps.jpg' style='zoom:180%'>
+</div>
+<img src='results/tps.jpg' style='zoom:60%'>
+
+- 变换后控制点移到了模板中控制点的位置。脸的形变比较自然，没有扭曲和突变，较好地完成了任务。
+- 对比两种变换方法发现，薄板样条方法的计算复杂度远小于局部仿射变换方法，而且结果更加自然，所以这种方法在实践中得以广泛运用。
+
+
 
 ## 小组分工
 

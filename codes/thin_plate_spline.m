@@ -63,13 +63,9 @@ function [T] = get_T(origin_control)
     S = zeros(N, N);
     for i = 1:N
         for j = 1:N
-            if i == j
-                S(i,j) = 0; 
-            else
-                x_i = origin_control(i,:);
-                x_j = origin_control(j,:);
-                S(i,j) = sigma(x_i,x_j);
-            end
+            x_i = origin_control(i,:);
+            x_j = origin_control(j,:);
+            S(i,j) = sigma(x_i,x_j);
         end
     end
     % construct T
@@ -85,7 +81,11 @@ function [s_ij] = sigma(x1, x2)
     % input: 2 coords of points
     % ouput: sigma(|x1-x2|)
     r = norm(x1 - x2);
-    s_ij = r*r*log(r);
+    if r == 0
+        s_ij = 0;
+    else
+        s_ij = r*r*log(r);
+    end
 end
 
 function print_imgs(inputImg, outputImg)
